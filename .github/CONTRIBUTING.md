@@ -110,7 +110,7 @@ chore/eslint-setup
 - PR 제목은 커밋 메시지 규칙과 동일하게 작성
 - PR 본문은 템플릿에 따라 작성 ([PR 템플릿](.github/pull_request_template.md) 참고)
 - 리뷰어를 반드시 지정할 것
-- Merge 방식은 **Squash and Merge** 사용 (커밋 히스토리 정리)
+- Merge 방식은 **Merge commit** 사용 (커밋 히스토리 정리)
 - Merge 후 작업 브랜치는 삭제
 
 ---
