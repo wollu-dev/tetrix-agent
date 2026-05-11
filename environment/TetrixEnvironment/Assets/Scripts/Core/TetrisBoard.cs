@@ -3,7 +3,7 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace DU.TetrixAgent.Core {
+namespace DU.TetrisAgent.Core {
     /// <summary>
     /// 테트리스 보드 핵심 로직
     /// - 보드 상태 관리
@@ -31,6 +31,7 @@ namespace DU.TetrixAgent.Core {
         [Header("타일 리소스")]
         [SerializeField] private TileBase[] tiles;       // 피스 종류별 타일 (7개)
         [SerializeField] private TileBase   ghostTile;   // 고스트 피스 타일
+        [SerializeField] private TileBase   bgTile;      // 보드 테두리 타일
      
         [Header("스폰 설정")]
         [SerializeField] private Vector3Int spawnPosition = new(3, 18, 0);
@@ -67,6 +68,7 @@ namespace DU.TetrixAgent.Core {
             _lastClearedLines = 0;
             _isGameOver       = false;
      
+            DrawBorder();
             NextType = RandomPieceType();
             SpawnNextPiece();
         }
@@ -98,6 +100,19 @@ namespace DU.TetrixAgent.Core {
      
         private TetrominoType RandomPieceType()
             => (TetrominoType)Random.Range(0, System.Enum.GetValues(typeof(TetrominoType)).Length);
+
+        private void DrawBorder() {
+            if (bgTile == null) return;
+
+            for (int y = -1; y <= height; y++) {
+                boardTilemap.SetTile(new Vector3Int(-1,    y, 0), bgTile);
+                boardTilemap.SetTile(new Vector3Int(width, y, 0), bgTile);
+            }
+            for (int x = 0; x < width; x++) {
+                boardTilemap.SetTile(new Vector3Int(x, -1,     0), bgTile);
+                boardTilemap.SetTile(new Vector3Int(x, height, 0), bgTile);
+            }
+        }
      
         // ─────────────────────────────────────────────────────────────
         // 피스 고정
@@ -119,8 +134,9 @@ namespace DU.TetrixAgent.Core {
             }
      
             pieceTilemap.ClearAllTiles();
-     
+
             _lastClearedLines = ClearLines();
+            SpawnNextPiece();
         }
      
         // ─────────────────────────────────────────────────────────────
@@ -185,7 +201,13 @@ namespace DU.TetrixAgent.Core {
             foreach (Vector3Int cell in piece.Cells)
                 pieceTilemap.SetTile(piece.Position + cell, null);
         }
-     
+
+        public void RefreshPiece() {
+            pieceTilemap.ClearAllTiles();
+            SetPiece(ActivePiece);
+            DrawGhost();
+        }
+
         // ─────────────────────────────────────────────────────────────
         // 고스트 피스 (하드드롭 위치 미리보기)
         // ─────────────────────────────────────────────────────────────

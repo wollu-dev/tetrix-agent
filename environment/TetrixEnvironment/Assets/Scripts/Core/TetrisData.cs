@@ -2,7 +2,7 @@
 
 using UnityEngine;
 
-namespace DU.TetrixAgent.Core {
+namespace DU.TetrisAgent.Core {
     public enum TetrominoType {
         I, O, T, S, Z, J, L
     }

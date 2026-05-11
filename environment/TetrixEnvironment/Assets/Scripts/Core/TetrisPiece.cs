@@ -3,7 +3,7 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace DU.TetrixAgent.Core {
+namespace DU.TetrisAgent.Core {
     /// <summary>
     /// 현재 낙하 중인 피스의 상태 및 이동/회전 처리
     /// </summary>
@@ -48,10 +48,9 @@ namespace DU.TetrixAgent.Core {
      
             if (!Board.IsValidPosition(this, newPos))
                 return false;
-     
-            Board.ClearPiece(this);
+
             Position = newPos;
-            Board.SetPiece(this);
+            Board.RefreshPiece();
             return true;
         }
      
@@ -66,15 +65,14 @@ namespace DU.TetrixAgent.Core {
             int originalRotation = Rotation;
             int newRotation = WrapRotation(Rotation + direction);
      
-            Board.ClearPiece(this);
             SetRotation(newRotation);
-     
+
             if (TryWallKick(originalRotation, newRotation))
                 return true;
-     
+
             // 회전 불가 → 원복
             SetRotation(originalRotation);
-            Board.SetPiece(this);
+            Board.RefreshPiece();
             return false;
         }
      
@@ -90,7 +88,7 @@ namespace DU.TetrixAgent.Core {
      
                 if (Board.IsValidPosition(this, testPos)) {
                     Position = testPos;
-                    Board.SetPiece(this);
+                    Board.RefreshPiece();
                     return true;
                 }
             }
