@@ -128,6 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 503513725}
+  - component: {fileID: 503513726}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -150,6 +151,25 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1546211479}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &503513726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 503513724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67f31184fec504a199033df4cf281452, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DU.TetrixAgent.Core.TetrisBoard
+  width: 10
+  height: 20
+  boardTilemap: {fileID: 0}
+  pieceTilemap: {fileID: 0}
+  tiles: []
+  ghostTile: {fileID: 0}
+  spawnPosition: {x: 3, y: 18, z: 0}
 --- !u!1 &576470832
 GameObject:
   m_ObjectHideFlags: 0
@@ -328,6 +348,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1397067460}
+  - component: {fileID: 1397067461}
   m_Layer: 0
   m_Name: Agent
   m_TagString: Untagged
@@ -350,6 +371,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1546211479}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1397067461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397067459}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0530d08e759384b61b72432aa4544861, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DU.TetrixAgent.Core.TetrisPiece
 --- !u!1 &1546211478
 GameObject:
   m_ObjectHideFlags: 0
