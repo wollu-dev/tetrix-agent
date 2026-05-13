@@ -27,3 +27,40 @@ ex) 에이전트: 게임 내의 플레이어 캐릭터, NPC 등
 행동: 이동, 점프, 달리기, 공격 등
 상태: 에이전트의 위치, 주변 적의 위치 및 능력치, 체력, 속도 등
 보상: 죽음 및 추락(-점수), 코인 획득 및 적 처치(+점수)
+
+
+Unity ML-Agents 설치 및 실습 가이드
+
+1단계. Anaconda 설치
+    1. 아래 링크로 이동해 운영체제에 맞는 Anaconda 설치 파일을 다운로드합니다.
+    <https://www.anaconda.com/download>
+
+    2. 설치 후, “Anaconda PowerShell Prompt"를 실행합니다.
+
+
+2단계. Python 3.10.12 가상환경 만들기
+    1. 아래 명령어를 입력해 가상환경을 생성합니다.
+        conda create -n ml-agents python=3.10.12 
+
+    2. 가상환경을 활성화합니다.
+        conda activate ml-agents 
+
+    3. Python 버전을 확인합니다.
+        python --version (Python 3.10.12가 출력되면 성공)
+
+
+3단계. ML-Agents Toolkit 저장소 복사
+    1. 아래 명령어를 차례대로 입력합니다.
+        git clone https://github.com/Unity-Technologies/ml-agents 
+        cd ml-agents 
+
+    2. 아래 명령어로 필요한 패키지를 설치합니다.
+        pip install -e ./ml-agents-envs
+        pip install -e ./ml-agents
+
+
+4단계. 설치 확인 및 학습 알고리즘 실행
+    1. 아래 명령어를 입력합니다.
+        mlagents-learn config/ppo/Basic.yaml --run-id=eliceBasic 
+
+    2. unity 메시지가 뜨면 설치완료!
