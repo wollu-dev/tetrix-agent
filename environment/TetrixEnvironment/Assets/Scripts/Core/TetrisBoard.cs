@@ -41,10 +41,17 @@ namespace DU.TetrisAgent.Core {
         // ─────────────────────────────────────────────────────────────
         public  TetrisPiece ActivePiece { get; private set; }
         public  TetrominoType NextType  { get; private set; }
-     
+
         private bool[,]  _grid;                // 고정된 셀 (true = 채워짐)
         private int      _lastClearedLines;
         private bool     _isGameOver;
+
+        // 점수 시스템
+        private int   _score;
+        private int   _level            = 1;
+        private int   _totalLinesCleared;
+        private int   _lastScoreDelta;
+        private float _lastStepReward;
      
         // 보드 경계 (왼쪽 하단 기준)
         public RectInt Bounds => new RectInt(0, 0, width, height);
@@ -67,6 +74,12 @@ namespace DU.TetrisAgent.Core {
             _grid = new bool[width, height];
             _lastClearedLines = 0;
             _isGameOver       = false;
+
+            _score             = 0;
+            _level             = 1;
+            _totalLinesCleared = 0;
+            _lastScoreDelta    = 0;
+            _lastStepReward    = 0f;
      
             DrawBorder();
             NextType = RandomPieceType();
@@ -119,24 +132,54 @@ namespace DU.TetrisAgent.Core {
         // ─────────────────────────────────────────────────────────────
      
         /// <summary>
-        /// 현재 피스를 보드에 고정하고 라인 클리어 처리
+        /// 현재 피스를 보드에 고정하고 라인 클리어 처리.
+        /// 이후 GetStepReward() / GetScoreDelta() 로 결과를 조회할 수 있습니다.
         /// </summary>
         public void LockPiece() {
+            int holesBefore = GetHoleCount();
+            int bumpBefore  = GetBumpiness();
+
             // pieceTilemap → boardTilemap 으로 이전
             foreach (Vector3Int cell in ActivePiece.Cells) {
                 Vector3Int pos = ActivePiece.Position + cell;
-     
+
                 // 보드 범위 내에서만 기록
                 if (IsInBounds(pos)) {
                     boardTilemap.SetTile(pos, ActivePiece.Tile);
                     _grid[pos.x, pos.y] = true;
                 }
             }
-     
+
             pieceTilemap.ClearAllTiles();
 
-            _lastClearedLines = ClearLines();
+            _lastClearedLines   = ClearLines();
+            _lastScoreDelta     = LineScore(_lastClearedLines);
+            _score             += _lastScoreDelta;
+            _totalLinesCleared += _lastClearedLines;
+            _level              = _totalLinesCleared / 10 + 1;
+
+            int holesAfter = GetHoleCount();
+            int bumpAfter  = GetBumpiness();
+
             SpawnNextPiece();
+
+            _lastStepReward = CalcStepReward(holesBefore, holesAfter, bumpBefore, bumpAfter);
+        }
+
+        private int LineScore(int lines) => lines switch {
+            1 => 100 * _level,
+            2 => 300 * _level,
+            3 => 500 * _level,
+            4 => 800 * _level,
+            _ => 0
+        };
+
+        private float CalcStepReward(int holesBefore, int holesAfter, int bumpBefore, int bumpAfter) {
+            if (_isGameOver) return -1f;
+            return _lastScoreDelta * 0.01f
+                 - (holesAfter - holesBefore) * 0.1f
+                 - (bumpAfter  - bumpBefore)  * 0.05f
+                 + 0.01f;
         }
      
         // ─────────────────────────────────────────────────────────────
@@ -250,9 +293,35 @@ namespace DU.TetrisAgent.Core {
             => pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height;
      
         // ─────────────────────────────────────────────────────────────
+        // 점수 시스템 API
+        // ─────────────────────────────────────────────────────────────
+
+        /// <summary>현재 누적 점수</summary>
+        public int GetScore() => _score;
+
+        /// <summary>현재 레벨 (1 시작, 10줄마다 +1)</summary>
+        public int GetLevel() => _level;
+
+        /// <summary>누적 클리어 라인 수</summary>
+        public int GetTotalLinesCleared() => _totalLinesCleared;
+
+        /// <summary>
+        /// 마지막 LockPiece() 에서 얻은 점수 증분.
+        /// 라인 클리어 없으면 0.
+        /// </summary>
+        public int GetScoreDelta() => _lastScoreDelta;
+
+        /// <summary>
+        /// B-style 스텝 보상. LockPiece() 직후 호출.
+        /// <para>= 점수증분×0.01 − 구멍증가×0.1 − 울퉁불퉁증가×0.05 + 생존 0.01</para>
+        /// <para>게임오버 시 −1.0 고정 반환</para>
+        /// </summary>
+        public float GetStepReward() => _lastStepReward;
+
+        // ─────────────────────────────────────────────────────────────
         // ML-Agents 보드 분석 API
         // ─────────────────────────────────────────────────────────────
-     
+
         /// <summary>보드 셀 반환 (0,0 = 좌측 하단)</summary>
         public bool GetCell(int x, int y) => _grid[x, y];
      
