@@ -164,7 +164,7 @@ GameObject:
   - component: {fileID: 876357567}
   - component: {fileID: 876357570}
   m_Layer: 0
-  m_Name: Main Camera
+  m_Name: === Main Camera ===
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -298,6 +298,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1013860681}
   - component: {fileID: 1013860683}
+  - component: {fileID: 1013860684}
   - component: {fileID: 1013860682}
   m_Layer: 0
   m_Name: Tetrix
@@ -363,6 +364,20 @@ MonoBehaviour:
   ghostTile: {fileID: 11400000, guid: 25759e7709ad34d65bc546e8c69577eb, type: 2}
   bgTile: {fileID: 11400000, guid: a9edc8cc54a3245348fb02b3e8e269ad, type: 2}
   spawnPosition: {x: 3, y: 18, z: 0}
+--- !u!114 &1013860684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1013860680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30dd1f4b1605c4d99a33eed0a2101b93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DU.TetrisAgent.Core.ScoreDisplay
+  fontSize: 8
+  textColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &1045899339
 GameObject:
   m_ObjectHideFlags: 0
