@@ -64,3 +64,21 @@ Unity ML-Agents 설치 및 실습 가이드
         mlagents-learn config/ppo/Basic.yaml --run-id=eliceBasic 
 
     2. unity 메시지가 뜨면 설치완료!
+
+
+참고 영상
+1. 먹이 먹기 1
+    https://www.youtube.com/watch?v=XySIVXJp7qE&t=435s
+
+2. 먹이 먹기 2
+    https://www.youtube.com/watch?v=zPFU30tbyKs
+
+3. 먹이 먹기 3
+    https://www.youtube.com/watch?v=supqT7kqpEI
+    
+4. Flappy Bird
+    https://www.youtube.com/watch?v=fz8D0OZkQGQ
+
+5. 자동차 운전
+    https://www.youtube.com/watch?v=2X5m_nDBvS4
+
