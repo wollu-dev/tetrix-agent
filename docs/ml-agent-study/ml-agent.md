@@ -82,3 +82,16 @@ Unity ML-Agents 설치 및 실습 가이드
 5. 자동차 운전
     https://www.youtube.com/watch?v=2X5m_nDBvS4
 
+
+unity
+1. 유니티 설치 사이트
+    https://unity.com/kr/download
+
+2. UnityHubSetup.exe 실행
+
+3. 라이선스 활성화
+    회원가입 or 로그인 하기
+
+4. projects에 TetrixEnvironment 실행
+
+5. 기본 테트리스 잘 되어있는지 해보기~
