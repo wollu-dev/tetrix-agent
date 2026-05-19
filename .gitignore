@@ -24,3 +24,8 @@ $RECYCLE.BIN/
 # VS Code
 .vscode/
 *.code-workspace
+environment/TetrixEnvironment/.vsconfig
+environment/TetrixEnvironment/Assets/ML-Agents.meta
+environment/TetrixEnvironment/Assets/ML-Agents/Timers.meta
+environment/TetrixEnvironment/Assets/ML-Agents/Timers/TrainingTetris_timers.json.meta
+environment/TetrixEnvironment/Assets/Scripts/Agent/TetrisAgent.cs.meta
