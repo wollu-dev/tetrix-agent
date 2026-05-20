@@ -11,78 +11,85 @@ namespace DU.TetrisAgent.Agent
         [SerializeField] private TetrisBoard board;
 
         private int _prevHoleCount;
+        private int _prevMaxHeight;
 
         public override void OnEpisodeBegin()
         {
             board.ResetBoard();
             _prevHoleCount = 0;
+            _prevMaxHeight = 0;
         }
 
-        // 총 204 observations
+        // 총 14 observations
         public override void CollectObservations(VectorSensor sensor)
         {
-            sensor.AddObservation(board.GetBoardFlat());          // 200: 10×20 보드
-            sensor.AddObservation((int)board.ActivePiece.Type);   // 1: 현재 피스 타입
-            sensor.AddObservation((int)board.NextType);           // 1: 다음 피스 타입
-            sensor.AddObservation(board.ActivePiece.Position.x);  // 1: 피스 X 위치
-            sensor.AddObservation(board.ActivePiece.Rotation);    // 1: 피스 회전 상태
+            // 보드 요약 (3개)
+            sensor.AddObservation(board.GetHoleCount()  / 20f);
+            sensor.AddObservation(board.GetMaxHeight()  / 20f);
+            sensor.AddObservation(board.GetLastClearedLines() / 4f);
+
+            // 현재 피스 정보 (4개)
+            sensor.AddObservation((int)board.ActivePiece.Type    / 6f);
+            sensor.AddObservation((int)board.NextType            / 6f);
+            sensor.AddObservation(board.ActivePiece.Position.x   / 9f);
+            sensor.AddObservation(board.ActivePiece.Position.y   / 20f);
         }
 
-        // 액션: 0=왼쪽, 1=오른쪽, 2=시계회전, 3=반시계회전, 4=하드드롭, 5=대기
         public override void OnActionReceived(ActionBuffers actions)
         {
             TetrisPiece piece = board.ActivePiece;
-            int action = actions.DiscreteActions[0];
 
-            switch (action)
+            switch (actions.DiscreteActions[0])
             {
                 case 0: piece.Move(Vector2Int.left);  break;
                 case 1: piece.Move(Vector2Int.right); break;
                 case 2: piece.Rotate(1);              break;
                 case 3: piece.Rotate(-1);             break;
-                case 4:
-                    piece.HardDrop();
-                    LockAndReward();
-                    return;
-                case 5: break;
+                case 4: piece.HardDrop(); break;
+                case 5: break; // 대기
             }
 
-            // 매 스텝 중력 적용 — 아래로 못 내려가면 고정
             if (!piece.Move(Vector2Int.down))
-                LockAndReward();
+            {
+                board.LockPiece();
+                ApplyReward();
+            }
         }
 
-        private void LockAndReward()
+        private void ApplyReward()
         {
-            board.LockPiece();
-
-            // 게임오버: 큰 패널티
             if (board.IsGameOver())
             {
-                AddReward(-1f);
+                AddReward(-2.0f);
                 EndEpisode();
                 return;
             }
 
-            int lines   = board.GetLastClearedLines();
-            int holes   = board.GetHoleCount();
-            int height  = board.GetMaxHeight();
-
             float reward = 0f;
 
-            // 줄 제거: 제곱 보상으로 멀티라인 강하게 유도 (1줄=0.5, 2줄=2.0, 3줄=4.5, 4줄=8.0)
-            reward += lines * lines * 0.5f;
+            // 줄 제거 보상 (핵심 보상!)
+            int lines = board.GetLastClearedLines();
+            if (lines == 1) reward += 1.0f;
+            if (lines == 2) reward += 3.0f;
+            if (lines == 3) reward += 6.0f;
+            if (lines == 4) reward += 10.0f;
 
-            // 생존 보너스
-            reward += 0.01f;
+            // 생존 보상
+            reward += 0.05f;
 
-            // 높이 패널티: 쌓일수록 감점
-            reward -= height * 0.005f;
+            // 높이 낮출수록 보상
+            int curHeight = board.GetMaxHeight();
+            if (curHeight < _prevMaxHeight)
+                reward += 0.1f;
+            _prevMaxHeight = curHeight;
 
-            // 구멍 패널티: 이번 스텝에서 새로 생긴 구멍만 감점
-            reward -= (holes - _prevHoleCount) * 0.1f;
-
+            // 구멍 패널티
+            int holes = board.GetHoleCount();
+            int newHoles = holes - _prevHoleCount;
+            if (newHoles > 0)
+                reward -= newHoles * 0.3f;
             _prevHoleCount = holes;
+
             AddReward(reward);
         }
 
