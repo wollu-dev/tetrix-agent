@@ -6,13 +6,16 @@ using DU.TetrisAgent.Core;
 
 namespace DU.TetrisAgent.Agent
 {
-    public class TetrisAgent : Agent
+    public class TetrisAgent : Unity.MLAgents.Agent
     {
         [SerializeField] private TetrisBoard board;
+
+        private int _prevHoleCount;
 
         public override void OnEpisodeBegin()
         {
             board.ResetBoard();
+            _prevHoleCount = 0;
         }
 
         // 총 204 observations
@@ -52,9 +55,35 @@ namespace DU.TetrisAgent.Agent
         private void LockAndReward()
         {
             board.LockPiece();
-            AddReward(board.GetStepReward()); // 게임오버 시 -1.0 포함
+
+            // 게임오버: 큰 패널티
             if (board.IsGameOver())
+            {
+                AddReward(-1f);
                 EndEpisode();
+                return;
+            }
+
+            int lines   = board.GetLastClearedLines();
+            int holes   = board.GetHoleCount();
+            int height  = board.GetMaxHeight();
+
+            float reward = 0f;
+
+            // 줄 제거: 제곱 보상으로 멀티라인 강하게 유도 (1줄=0.5, 2줄=2.0, 3줄=4.5, 4줄=8.0)
+            reward += lines * lines * 0.5f;
+
+            // 생존 보너스
+            reward += 0.01f;
+
+            // 높이 패널티: 쌓일수록 감점
+            reward -= height * 0.005f;
+
+            // 구멍 패널티: 이번 스텝에서 새로 생긴 구멍만 감점
+            reward -= (holes - _prevHoleCount) * 0.1f;
+
+            _prevHoleCount = holes;
+            AddReward(reward);
         }
 
         public override void Heuristic(in ActionBuffers actionsOut)
