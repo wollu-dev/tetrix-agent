@@ -6,84 +6,86 @@ using DU.TetrisAgent.Core;
 
 namespace DU.TetrisAgent.Agent
 {
+    // 배치 기반 에이전트: 피스 1개당 결정 1번 (회전 + 목표 컬럼)
+    // Behavior Parameters: Branch 0 = 4 (회전), Branch 1 = 10 (컬럼)
     public class TetrisAgent : Unity.MLAgents.Agent
     {
         [SerializeField] private TetrisBoard board;
 
         private int _prevHoleCount;
-        private int _prevMaxHeight;
 
         public override void OnEpisodeBegin()
         {
             board.ResetBoard();
             _prevHoleCount = 0;
-            _prevMaxHeight = 0;
         }
 
-        // 총 14 observations
+        // 총 15 observations
         public override void CollectObservations(VectorSensor sensor)
         {
-            // 보드 요약 (3개)
-            sensor.AddObservation(board.GetHoleCount()  / 20f);
-            sensor.AddObservation(board.GetMaxHeight()  / 20f);
-            sensor.AddObservation(board.GetLastClearedLines() / 4f);
+            for (int x = 0; x < 10; x++)
+                sensor.AddObservation(board.GetColumnHeight(x) / 20f);
 
-            // 현재 피스 정보 (4개)
-            sensor.AddObservation((int)board.ActivePiece.Type    / 6f);
-            sensor.AddObservation((int)board.NextType            / 6f);
-            sensor.AddObservation(board.ActivePiece.Position.x   / 9f);
-            sensor.AddObservation(board.ActivePiece.Position.y   / 20f);
+            sensor.AddObservation(board.GetHoleCount()  / 100f);
+            sensor.AddObservation(board.GetBumpiness()  / 50f);
+            sensor.AddObservation(board.GetMaxHeight()  / 20f);
+
+            sensor.AddObservation((int)board.ActivePiece.Type / 6f);
+            sensor.AddObservation((int)board.NextType         / 6f);
         }
 
+        // Branch 0: 목표 회전 (0~3), Branch 1: 목표 컬럼 (0~9)
         public override void OnActionReceived(ActionBuffers actions)
         {
+            int targetRotation = actions.DiscreteActions[0];
+            int targetColumn   = actions.DiscreteActions[1];
+
             TetrisPiece piece = board.ActivePiece;
 
-            switch (actions.DiscreteActions[0])
-            {
-                case 0: piece.Move(Vector2Int.left);  break;
-                case 1: piece.Move(Vector2Int.right); break;
-                case 2: piece.Rotate(1);              break;
-                case 3: piece.Rotate(-1);             break;
-                case 4: piece.HardDrop(); break;
-                case 5: break; // 대기
-            }
+            for (int i = 0; i < targetRotation; i++)
+                piece.Rotate(1);
 
-            if (!piece.Move(Vector2Int.down))
-            {
-                board.LockPiece();
-                ApplyReward();
-            }
+            int dx = targetColumn - piece.Position.x;
+            Vector2Int dir = dx > 0 ? Vector2Int.right : Vector2Int.left;
+            for (int i = 0; i < Mathf.Abs(dx); i++)
+                if (!piece.Move(dir)) break;
+
+            piece.HardDrop();
+            board.LockPiece();
+
+            ApplyReward();
         }
 
         private void ApplyReward()
         {
             if (board.IsGameOver())
             {
-                AddReward(-2.0f);
+                AddReward(-1.0f);
                 EndEpisode();
                 return;
             }
 
             float reward = 0f;
 
-            // 줄 제거 보상 (핵심 보상!)
+            // 줄 제거 보상 — 1줄=1, 2줄=4, 3줄=9, 4줄=16
             int lines = board.GetLastClearedLines();
-            if (lines == 1) reward += 1.0f;
-            if (lines == 2) reward += 3.0f;
-            if (lines == 3) reward += 6.0f;
-            if (lines == 4) reward += 10.0f;
+            reward += lines * lines;
+
+            // 행 완성도 보상 — 가로줄이 채워질수록 즉시 보상
+            // 9/10 채워지면 0.81×0.05=0.04, 완성에 가까울수록 강하게 유도
+            for (int y = 0; y < 20; y++)
+            {
+                int filled = 0;
+                for (int x = 0; x < 10; x++)
+                    if (board.GetCell(x, y)) filled++;
+                float ratio = filled / 10f;
+                reward += ratio * ratio * 0.05f;
+            }
 
             // 생존 보상
-            reward += 0.05f;
+            reward += 0.01f;
 
-            // 높이 낮출수록 보상
-            int curHeight = board.GetMaxHeight();
-            if (curHeight < _prevMaxHeight)
-                reward += 0.1f;
-            _prevMaxHeight = curHeight;
-
-            // 구멍 패널티
+            // 구멍 패널티 — 새로 생긴 구멍만
             int holes = board.GetHoleCount();
             int newHoles = holes - _prevHoleCount;
             if (newHoles > 0)
@@ -96,12 +98,8 @@ namespace DU.TetrisAgent.Agent
         public override void Heuristic(in ActionBuffers actionsOut)
         {
             var d = actionsOut.DiscreteActions;
-            d[0] = 5;
-            if (Input.GetKey(KeyCode.LeftArrow))  d[0] = 0;
-            if (Input.GetKey(KeyCode.RightArrow)) d[0] = 1;
-            if (Input.GetKey(KeyCode.UpArrow))    d[0] = 2;
-            if (Input.GetKey(KeyCode.Z))          d[0] = 3;
-            if (Input.GetKey(KeyCode.Space))      d[0] = 4;
+            d[0] = 0;
+            d[1] = 4;
         }
     }
 }
