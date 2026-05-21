@@ -10,16 +10,13 @@ namespace DU.TetrisAgent.Agent
     {
         [SerializeField] private TetrisBoard board;
 
-        // 보드 상태 추적용 (delta 보상 계산)
-        private int prevHoles;
-        private int prevBumpiness;
+        private const float Gamma = 0.99f;   // config의 gamma와 동일
+        private float prevPotential;
 
         public override void OnEpisodeBegin()
         {
             board.ResetBoard();
-            // 보드가 비었으므로 초기값 0
-            prevHoles     = 0;
-            prevBumpiness = 0;
+            prevPotential = ComputePotential();   // 빈 보드 → 0
         }
 
         // 총 15 observations (Space Size 15 그대로, 인스펙터 수정 불필요)
@@ -35,7 +32,6 @@ namespace DU.TetrisAgent.Agent
             sensor.AddObservation(board.ActivePiece.Position.x / 9f);
         }
 
-        // Branch 0: 회전 (0-3), Branch 1: 목표 컬럼 (0-9)
         public override void OnActionReceived(ActionBuffers actions)
         {
             int targetRotation = actions.DiscreteActions[0];
@@ -62,31 +58,37 @@ namespace DU.TetrisAgent.Agent
                 return;
             }
 
-            // ---------- 1. 생존 보상 (오래 버티기) ----------
-            AddReward(0.02f);
+            // ---------- 1. 생존 보상 (지배적 신호: 오래 살수록 무조건 이득) ----------
+            AddReward(0.1f);
 
-            // ---------- 2. 줄 제거 보상 (가장 강한 신호) ----------
+            // ---------- 2. 줄 제거 보상 ----------
             int lines = board.GetLastClearedLines();
             if (lines > 0)
                 AddReward(lines * lines * 1.0f);   // 1, 4, 9, 16
 
-            // ---------- 3. delta 기반 보드 상태 평가 ----------
-            int holes     = board.GetHoleCount();
-            int bumpiness = GetBumpiness();
-
-            int dHoles = holes     - prevHoles;       // 늘면 +, 줄면 -
-            int dBump  = bumpiness - prevBumpiness;
-
-            // 구멍이 늘면 벌점 (줄면 보상)
-            AddReward(-0.5f * dHoles);
-            // 표면이 울퉁불퉁해지면 벌점 → 가운데 쌓기 직접 억제
-            AddReward(-0.2f * dBump);
-
-            prevHoles     = holes;
-            prevBumpiness = bumpiness;
+            // ---------- 3. potential 기반 shaping (자살 유인 없음) ----------
+            float curPotential = ComputePotential();
+            AddReward(Gamma * curPotential - prevPotential);
+            prevPotential = curPotential;
         }
 
-        // 인접 컬럼 높이차의 합 (표면 거칠기)
+        // 보드가 깨끗할수록 0에 가깝고, 나쁠수록 큰 음수
+        private float ComputePotential()
+        {
+            int agg   = GetAggregateHeight();
+            int holes = board.GetHoleCount();
+            int bump  = GetBumpiness();
+            return -(0.02f * agg + 0.4f * holes + 0.12f * bump);
+        }
+
+        private int GetAggregateHeight()
+        {
+            int sum = 0;
+            for (int x = 0; x < 10; x++)
+                sum += board.GetColumnHeight(x);
+            return sum;
+        }
+
         private int GetBumpiness()
         {
             int sum = 0;
