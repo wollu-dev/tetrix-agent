@@ -10,16 +10,11 @@ namespace DU.TetrisAgent.Agent
     {
         [SerializeField] private TetrisBoard board;
 
-        private const float Gamma = 0.99f;   // config의 gamma와 동일
-        private float prevPotential;
-
         public override void OnEpisodeBegin()
         {
             board.ResetBoard();
-            prevPotential = ComputePotential();   // 빈 보드 → 0
         }
 
-        // 총 15 observations (Space Size 15 그대로, 인스펙터 수정 불필요)
         public override void CollectObservations(VectorSensor sensor)
         {
             for (int x = 0; x < 10; x++)
@@ -50,7 +45,7 @@ namespace DU.TetrisAgent.Agent
             piece.HardDrop();
             board.LockPiece();
 
-            // ---------- 게임 오버 ----------
+            // 게임 오버
             if (board.IsGameOver())
             {
                 AddReward(-1f);
@@ -58,43 +53,13 @@ namespace DU.TetrisAgent.Agent
                 return;
             }
 
-            // ---------- 1. 생존 보상 (지배적 신호: 오래 살수록 무조건 이득) ----------
-            AddReward(0.1f);
+            // 1. 생존 보상 — 블럭 하나 버틸 때마다 +. 항상 양수라 자살 자체가 불가능
+            AddReward(0.05f);
 
-            // ---------- 2. 줄 제거 보상 ----------
+            // 2. 줄 제거 — 24개 벽을 넘는 유일한 길. 크게 보상
             int lines = board.GetLastClearedLines();
             if (lines > 0)
-                AddReward(lines * lines * 1.0f);   // 1, 4, 9, 16
-
-            // ---------- 3. potential 기반 shaping (자살 유인 없음) ----------
-            float curPotential = ComputePotential();
-            AddReward(Gamma * curPotential - prevPotential);
-            prevPotential = curPotential;
-        }
-
-        // 보드가 깨끗할수록 0에 가깝고, 나쁠수록 큰 음수
-        private float ComputePotential()
-        {
-            int agg   = GetAggregateHeight();
-            int holes = board.GetHoleCount();
-            int bump  = GetBumpiness();
-            return -(0.02f * agg + 0.4f * holes + 0.12f * bump);
-        }
-
-        private int GetAggregateHeight()
-        {
-            int sum = 0;
-            for (int x = 0; x < 10; x++)
-                sum += board.GetColumnHeight(x);
-            return sum;
-        }
-
-        private int GetBumpiness()
-        {
-            int sum = 0;
-            for (int x = 0; x < 9; x++)
-                sum += Mathf.Abs(board.GetColumnHeight(x) - board.GetColumnHeight(x + 1));
-            return sum;
+                AddReward(lines * lines * 2.0f);   // 2, 8, 18, 32
         }
 
         public override void Heuristic(in ActionBuffers actionsOut)
